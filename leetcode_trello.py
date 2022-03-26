@@ -19,7 +19,7 @@ class LeetcodeTrello(TrelloClient):
     boards = self.list_boards()
     for board in boards:
       if board.name == LeetcodeTrello.board_name:
-        question_list = list(map(lambda x:x.name, board.all_lists()))
+        question_list = list(map(lambda x:x.name, board.open_lists()))
         print(question_list)
         if "Questions" not in question_list:
           question_list = board.add_list('Questions')
@@ -29,7 +29,7 @@ class LeetcodeTrello(TrelloClient):
 
     board = self.add_board(LeetcodeTrello.board_name)
     self.clear_board(board.id)
-    self.add_list("Questions", pos=0)
+    board.add_list("Questions", pos=0)
 
     return board
 
@@ -54,7 +54,7 @@ class LeetcodeTrello(TrelloClient):
 
   def add_question(self, question):
 
-    question_list = self.board.all_lists()[-1]
+    question_list = self.board.all_lists()
     question_list.add_card(question)
 
   def mark_question(self,card_id, label):
