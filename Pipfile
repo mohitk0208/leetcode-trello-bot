@@ -5,6 +5,7 @@ name = "pypi"
 
 [packages]
 py-trello = "*"
+python-telegram-bot = "*"
 
 [dev-packages]
 
