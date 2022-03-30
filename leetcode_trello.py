@@ -2,11 +2,19 @@ from trello import TrelloClient
 
 class LeetcodeTrello(TrelloClient):
 
-  board_name = "Leetcode"
+  BOARD_NAME = "Leetcode"
+  LABEL_COLORS = ['green', 'yellow', 'orange', 'red', 'purple', 'blue', 'sky', 'lime', 'pink', 'black']
+  COVER_COLORS = {
+    "EASY": "green",
+    "MEDIUM": "yellow",
+    "HARD": "red"
+  }
+
 
   def __init__(self, api_key, api_secret=None, token=None, token_secret=None):
     super().__init__(api_key, api_secret, token, token_secret)
-    self.board = self.create_or_get_board()
+    self.board, self.question_list = self.create_or_get_board()
+
 
 
 
@@ -17,21 +25,23 @@ class LeetcodeTrello(TrelloClient):
     """
     print("Creating or getting board")
     boards = self.list_boards()
+
     for board in boards:
-      if board.name == LeetcodeTrello.board_name:
-        question_list = list(map(lambda x:x.name, board.open_lists()))
-        print(question_list)
-        if "Questions" not in question_list:
-          question_list = board.add_list('Questions')
-        return board
+      if board.name == LeetcodeTrello.BOARD_NAME:
+        print("Found board")
+        question_lists = list(filter(lambda x:x.name, board.open_lists()))
+        print(question_lists)
+        if len(question_lists) == 0:
+          question_lists.append(board.add_list('Questions', pos=0))
 
+        return board, question_lists[0]
 
-
-    board = self.add_board(LeetcodeTrello.board_name)
+    print("Creating new Board")
+    board = self.add_board(LeetcodeTrello.BOARD_NAME)
     self.clear_board(board.id)
-    board.add_list("Questions", pos=0)
+    question_list = board.add_list("Questions", pos=0)
 
-    return board
+    return board, question_list
 
 
 
@@ -52,24 +62,26 @@ class LeetcodeTrello(TrelloClient):
       list_.close()
 
 
-  def add_question(self, question):
+  def add_question(self, question, email):
+    self.question_list.add_card(question, label = self.create_or_get_label(email))
 
-    question_list = self.board.all_lists()
-    question_list.add_card(question)
+  def mark_question_as_done(self,card_id, email):
+    label = self.create_or_get_label(email)
+    card = filter(lambda card: card.id == card_id, self.question_list.list_cards())[0]
+    card.add_label(label)
 
-  def mark_question(self,card_id, label):
-    question_list = self.board.all_lists()[-1]
+  def get_all_questions(self, email):
+    label = self.create_or_get_label(email)
+    return self.question_list.list_cards()
 
-    question_list.list_cards(query={label: [label]})
-    pass
-
-  def get_all_questions(self, label):
-
-    self.board.list_cards()
-    pass
 
   def get_all_member_mails(self):
-    return [i.email for i in self.board.all_members().fetch()]
+    return [i.fetch().email for i in self.board.all_members()]
 
-  def add_label(self, mail):
-    self.board.add_label(mail)
+
+  def create_or_get_label(self, mail):
+    label_list = filter(lambda x: x.name == mail, self.board.get_labels())
+    if len(label_list) == 0:
+      return self.board.add_label(mail, LeetcodeTrello.LABEL_COLORS[len(label_list)])
+
+    return label_list[0]
